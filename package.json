@@ -1,0 +1,15 @@
+{
+    "name": "dairy-center-api",
+    "version": "1.0.0",
+    "description": "API server to connect to Mongo DB",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js"
+    },
+    "author": "Suneel Podapati",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^4.18.1",
+        "mongoose": "^6.3.8"
+    }
+}
