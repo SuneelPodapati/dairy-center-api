@@ -1,7 +1,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var mongo = require("mongoose");
-var port = 1020;
+var port = process.env.PORT || 1020;
 var mongodb = process.env.MONGODB_MCLOUD_DAIRY_CENTER || "mongodb://localhost:27017/DairyCenter";
 
 var db = mongo.connect(mongodb, function(err, response) {
