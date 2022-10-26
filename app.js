@@ -3,6 +3,7 @@ var bodyParser = require('body-parser');
 var mongo = require("mongoose");
 var port = process.env.PORT || 1020;
 var mongodb = process.env.MONGODB_MCLOUD_DAIRY_CENTER || "mongodb://localhost:27017/DairyCenter";
+var API_SECRET_HEADER = process.env.API_SECRET_HEADER || "API_SECRET_HEADER";
 
 var db = mongo.connect(mongodb, function(err, response) {
     if (err) { console.log(err); } else { console.log('Connected to db'); }
@@ -14,6 +15,14 @@ app.use(bodyParser());
 app.use(bodyParser.json({ limit: '25mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
+
+app.use((req, res, next) => {
+    if (req.headers.authorization && req.headers.authorization.includes(API_SECRET_HEADER)) {
+        next();
+    } else {
+        res.status(401).send("401 Unauthorized");
+    }
+});
 
 app.use(function(req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', '*');
