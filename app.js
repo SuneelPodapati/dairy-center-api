@@ -17,7 +17,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 app.use((req, res, next) => {
-    if (req.headers.authorization && req.headers.authorization.includes(API_SECRET_HEADER)) {
+    if (req.headers['sec-fetch-mode'] == 'cors') {
+        next();
+    } else if (req.headers.authorization && req.headers.authorization.includes(API_SECRET_HEADER)) {
         next();
     } else {
         res.status(401).send("401 Unauthorized");
@@ -27,7 +29,7 @@ app.use((req, res, next) => {
 app.use(function(req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Headers', 'Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Authorization, Access-Control-Request-Headers');
     res.setHeader('Access-Control-Allow-Credentials', true);
     next();
 });
@@ -42,6 +44,7 @@ var ProducersSchema = new Schema({
     contactNumber: { type: String },
     bankAccountNumber: { type: String },
     bankIfscCode: { type: String },
+    specialRate: { type: Number },
     loanDate: { type: String },
     loanAmount: { type: Number },
     interestAmount: { type: Number },
