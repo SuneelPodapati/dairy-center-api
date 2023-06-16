@@ -2,13 +2,12 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var mongo = require("mongoose");
 var port = process.env.PORT || 1020;
-var mongodb = process.env.MONGODB_MCLOUD_DAIRY_CENTER || "mongodb://localhost:27017/DairyCenter";
 var API_SECRET_HEADER = process.env.API_SECRET_HEADER || "API_SECRET_HEADER";
-
-var db = mongo.connect(mongodb, function(err, response) {
-    if (err) { console.log(err); } else { console.log('Connected to db'); }
-});
-
+var connectionStrings = {
+    Puretipalli: "mongodb://localhost:27017/DairyCenter",
+    Kalavalla: "mongodb://localhost:27018/DairyCenter",
+};
+var dbs = {};
 
 var app = express()
 app.use(bodyParser());
@@ -34,6 +33,33 @@ app.use(function(req, res, next) {
     next();
 });
 
+app.use((req, res, next) => {
+    req.url = req.url.replace('/XXXXX', '');
+    next();
+});
+
+app.use((req, res, next) => {
+    if (req.headers.center) {
+        let connectionString = process.env[req.headers.center] || connectionStrings[req.headers.center];
+        if (!dbs[req.headers.center]) {
+            dbs[req.headers.center] = mongo.createConnection(connectionString, function(err, response) {
+                if (err) {
+                    console.log(err);
+                    res.status(500).send("DB Connection Failed");
+                } else {
+                    console.log(`Connected to ${req.headers.center} db`);
+                    next();
+                }
+            });
+        } else {
+            next();
+        }
+
+    } else {
+        res.status(400).send("Bad request!");
+    }
+});
+
 var Schema = mongo.Schema;
 
 //#region Producer
@@ -53,9 +79,9 @@ var ProducersSchema = new Schema({
     loan2Amount: { type: Number }
 }, { versionKey: false });
 
-const ProducerModel = mongo.model('producer', ProducersSchema, 'Producers');
 
 app.post("/api/producer/bulk", function(req, res) {
+    let ProducerModel = dbs[req.headers.center].model('producer', ProducersSchema, 'Producers');
     ProducerModel.bulkWrite(req.body, function(err, data) {
         if (err) {
             res.send(err);
@@ -66,6 +92,7 @@ app.post("/api/producer/bulk", function(req, res) {
 })
 
 app.post("/api/producer", function(req, res) {
+    let ProducerModel = dbs[req.headers.center].model('producer', ProducersSchema, 'Producers');
     var producerDocument = new ProducerModel(req.body);
     producerDocument.save(function(err, data) {
         if (err) {
@@ -77,6 +104,7 @@ app.post("/api/producer", function(req, res) {
 })
 
 app.put("/api/producer", function(req, res) {
+    let ProducerModel = dbs[req.headers.center].model('producer', ProducersSchema, 'Producers');
     var producerDocument = new ProducerModel(req.body);
     producerDocument.updateOne(req.body, function(err, data) {
         if (err) {
@@ -88,6 +116,7 @@ app.put("/api/producer", function(req, res) {
 })
 
 app.get("/api/producer/:allOrActive", function(req, res) {
+    let ProducerModel = dbs[req.headers.center].model('producer', ProducersSchema, 'Producers');
     let query = req.params.allOrActive == 'all' ? {} : { active: true };
     ProducerModel.find(query, function(err, data) {
         if (err) {
@@ -99,6 +128,7 @@ app.get("/api/producer/:allOrActive", function(req, res) {
 })
 
 app.delete("/api/producer/:id", function(req, res) {
+        let ProducerModel = dbs[req.headers.center].model('producer', ProducersSchema, 'Producers');
         var producerDocument = ProducerModel.findById(req.params.id);
         producerDocument.updateOne({ active: false }, function(err, data) {
             if (err) {
@@ -128,9 +158,8 @@ var ProcurementsSchema = new Schema({
     adjustRate: { type: Boolean },
 }, { versionKey: false });
 
-const ProcurementModel = mongo.model('procurement', ProcurementsSchema, 'Procurements');
-
 app.post("/api/procurement/bulk", function(req, res) {
+    let ProcurementModel = dbs[req.headers.center].model('procurement', ProcurementsSchema, 'Procurements');
     ProcurementModel.bulkWrite(req.body, function(err, data) {
         if (err) {
             res.send(err);
@@ -141,6 +170,7 @@ app.post("/api/procurement/bulk", function(req, res) {
 })
 
 app.post("/api/procurement", function(req, res) {
+    let ProcurementModel = dbs[req.headers.center].model('procurement', ProcurementsSchema, 'Procurements');
     var procurementDocument = new ProcurementModel(req.body);
     procurementDocument.save(function(err, data) {
         if (err) {
@@ -152,6 +182,7 @@ app.post("/api/procurement", function(req, res) {
 })
 
 app.put("/api/procurement", function(req, res) {
+    let ProcurementModel = dbs[req.headers.center].model('procurement', ProcurementsSchema, 'Procurements');
     var procurementDocument = new ProcurementModel(req.body);
     procurementDocument.updateOne(req.body, function(err, data) {
         if (err) {
@@ -163,6 +194,7 @@ app.put("/api/procurement", function(req, res) {
 })
 
 app.get("/api/procurement/:date?/:shift?", function(req, res) {
+    let ProcurementModel = dbs[req.headers.center].model('procurement', ProcurementsSchema, 'Procurements');
     let query = {};
     if (req.params.date) {
         query = {...query, date: req.params.date };
@@ -180,6 +212,7 @@ app.get("/api/procurement/:date?/:shift?", function(req, res) {
 })
 
 app.delete("/api/procurement/:id", function(req, res) {
+    let ProcurementModel = dbs[req.headers.center].model('procurement', ProcurementsSchema, 'Procurements');
     ProcurementModel.findOneAndDelete({ "_id": req.params.id }, function(err, data) {
         if (err) {
             res.send(err);
@@ -190,6 +223,7 @@ app.delete("/api/procurement/:id", function(req, res) {
 })
 
 app.get("/api/procurement/bill/:fromDate/:toDate/:producerCode?", function(req, res) {
+    let ProcurementModel = dbs[req.headers.center].model('procurement', ProcurementsSchema, 'Procurements');
     let query = { date: { $gte: req.params.fromDate, $lte: req.params.toDate } };
     if (req.params.producerCode) {
         query = {...query, producerCode: req.params.producerCode };
