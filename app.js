@@ -70,7 +70,7 @@ var ProducersSchema = new Schema({
     contactNumber: { type: String },
     bankAccountNumber: { type: String },
     bankIfscCode: { type: String },
-    specialRate: { type: Number },
+    specialRate: { type: String },
     loanDate: { type: String },
     loanAmount: { type: Number },
     interestAmount: { type: Number },
@@ -105,8 +105,7 @@ app.post("/api/producer", function(req, res) {
 
 app.put("/api/producer", function(req, res) {
     let ProducerModel = dbs[req.headers.center].model('producer', ProducersSchema, 'Producers');
-    var producerDocument = new ProducerModel(req.body);
-    producerDocument.updateOne(req.body, function(err, data) {
+    ProducerModel.updateOne({ "_id": req.body._id }, req.body, function(err, data) {
         if (err) {
             res.send(err);
         } else {
