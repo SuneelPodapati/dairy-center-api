@@ -16,9 +16,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 app.use((req, res, next) => {
-    if (req.headers['sec-fetch-mode'] == 'cors') {
-        next();
-    } else if (req.headers.authorization && req.headers.authorization.includes(API_SECRET_HEADER)) {
+    if (req.headers.authorization && req.headers.authorization.includes(API_SECRET_HEADER)) {
         next();
     } else {
         res.status(401).send("401 Unauthorized");
